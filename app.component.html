@@ -1,0 +1,203 @@
+<div id="app-frame">
+    <div id="app-toolbar">
+        <img class="toolbar-left-button" id="undo-icon" src="../assets/images/undo-icon.png" (click)="UndoOnClick()"
+            (mouseenter)="UndoOnMouseEnter()" (mouseleave)="UndoOnMouseLeave()">
+        <img class="toolbar-left-button" id="redo-icon" src="../assets/images/redo-icon.png" (click)="RedoOnClick()"
+            (mouseenter)="RedoOnMouseEnter()" (mouseleave)="RedoOnMouseLeave()">
+        <img class="toolbar-left-button" id="create-icon" src="../assets/images/plus-icon.png"
+            (click)="CreateOnClick($event)" (mouseenter)="CreateOnMouseEnter()" (mouseleave)="CreateOnMouseLeave()">
+        <img class="toolbar-right-button" id="sound-icon" src="../assets/images/mute-on.png"
+            (click)="MuteOnClick($event)" (mouseenter)="MuteOnMouseEnter()" (mouseleave)="MuteOnMouseLeave()">
+        <img class="toolbar-right-button" id="metronome-icon" src="../assets/images/metronome-off.png"
+            (click)="MetronomeOnClick($event)" (mouseenter)="MetronomeOnMouseEnter()"
+            (mouseleave)="MetronomeOnMouseLeave()">
+        <div class="toolbar-right-button toolbar-div-button toolbar-timesig-button"
+            (mouseenter)="TimeSigButtonOnMouseEnter()" (mouseleave)="TimeSigButtonOnMouseLeave()">
+            <span class="toolbar-timesig-button-above">{{timeSig[0]}}</span>
+            <span class="toolbar-timesig-button-below">{{timeSig[1]}}</span>
+        </div>
+        <div class="toolbar-right-button toolbar-div-button" (mouseenter)="TempoButtonOnMouseEnter()"
+            (mouseleave)="TempoButtonOnMouseLeave()">
+            <span class="toolbar-right-button-above">{{tempo}}</span>
+            <span class="toolbar-right-button-below">BPM</span>
+        </div>
+        <div class="toolbar-right-button toolbar-div-button" (mouseenter)="TuningButtonOnMouseEnter()"
+            (mouseleave)="TuningButtonOnMouseLeave()">
+            <span class="toolbar-right-button-above">{{tuning}}</span>
+            <span class="toolbar-right-button-below">Hz</span>
+        </div>
+    </div>
+    <div id="app-desk" (drop)="DeskOnDrop($event)" (dragover)="DeskOnDragOver($event)">
+        <ng-template #appDesk></ng-template>
+    </div>
+</div>
+
+<div id="create-list" *ngIf="createListOpen">
+    <div id="create-list-arrow"></div>
+    <span selection="0" class="create-list-span" (click)="CreateListOnClick($event)">Note</span>
+    <span selection="1" class="create-list-span" (click)="CreateListOnClick($event)">Chord</span>
+    <span selection="2" class="create-list-span" (click)="CreateListOnClick($event)">Scale</span>
+    <span selection="3" class="create-list-span" (click)="CreateListOnClick($event)">Custom Set</span>
+    <span selection="4" class="create-list-span" (click)="CreateListOnClick($event)">Progression</span>
+    <span selection="5" class="create-list-span" (click)="CreateListOnClick($event)">Note Sequence</span>
+</div>
+
+<div id="tempo-popup" (mouseenter)="TempoPopupOnMouseEnter()" (mouseleave)="TempoPopupOnMouseLeave()">
+    <div id="tempo-popup-arrow"></div>
+    <div class="tempo-popup-buttons">
+        <div class="tempo-popup-button" (click)="TempoPopupIncrementTenOnClick()">+10</div>
+        <div class="tempo-popup-button" (click)="TempoPopupIncrementOnClick()">+</div>
+    </div>
+    <span id="tempo-popup-span">Tempo: {{tempo}} BPM</span>
+    <div class="tempo-popup-buttons">
+        <div class="tempo-popup-button" (click)="TempoPopupDecrementTenOnClick()">-10</div>
+        <div class="tempo-popup-button" (click)="TempoPopupDecrementOnClick()">-</div>
+    </div>
+</div>
+<div id="tuning-popup" (mouseenter)="TuningPopupOnMouseEnter()" (mouseleave)="TuningPopupOnMouseLeave()">
+    <div id="tuning-popup-arrow"></div>
+    <span id="tuning-popup-span">A4 = </span>
+    <select id="tuning-popup-combo" (change)="TuningOnChange($event)">
+        <option *ngFor="let tune of TUNINGS" [selected]="tune == 440" [value]="tune">
+            {{tune}} Hz
+        </option>
+    </select>
+</div>
+<div id="timesig-popup" (mouseenter)="TimeSigPopupOnMouseEnter()" (mouseleave)="TimeSigPopupOnMouseLeave()">
+    <div id="timesig-popup-arrow"></div>
+    <span id="timesig-popup-span">Time Signature:</span>
+    <div *ngFor="let timeS of TIME_SIGNATURES; let i = index"
+        [class]="(timeS[0] == timeSig[0] && timeS[1] == timeSig[1]) ? 'timesig-popup-timesig-selected' : 'timesig-popup-timesig'"
+        (click)="TimeSigOnClick(i)">
+        <span class="timesig-popup-timesig-half">{{timeS[0]}}</span>
+        <span class="timesig-popup-timesig-half">{{timeS[1]}}</span>
+    </div>
+</div>
+
+<div class="toolbar-tooltip" id="toolbar-mute-tooltip">
+    <span class="toolbar-tooltip-span">Sound: {{mute ? "Off" : "On"}}</span>
+</div>
+<div class="toolbar-tooltip" id="toolbar-metronome-tooltip">
+    <span class="toolbar-tooltip-span">Metronome: {{metronomeOn ? "On" : "Off"}}</span>
+</div>
+<div class="toolbar-tooltip" id="toolbar-undo-tooltip">
+    <span class="toolbar-tooltip-span">Undo</span>
+</div>
+<div class="toolbar-tooltip" id="toolbar-redo-tooltip">
+    <span class="toolbar-tooltip-span">Redo</span>
+</div>
+<div class="toolbar-tooltip" id="toolbar-create-tooltip">
+    <span class="toolbar-tooltip-span">Create</span>
+</div>
+
+<div *ngIf="selection > -1" id="create-popup">
+    <div id="create-popup-bg" (click)="CreatePopupBackgroundOnClick()"></div>
+    <div id="create-popup-frame">
+
+        <div *ngIf="selection == 0" class="create-popup-content">
+            <span class="create-popup-note-span">Key:</span>
+            <select class="create-popup-note-combo" id="create-popup-note-combo-key">
+                <option *ngFor="let name of NOTE_NAMES" [value]="name">
+                    {{name}}
+                </option>
+            </select>
+            <span class="create-popup-note-span">Octave:</span>
+            <select class="create-popup-note-combo" id="create-popup-note-combo-octave">
+                <option *ngFor="let i of OCTAVES" [value]="i" [selected]="i == 4">
+                    {{i}}
+                </option>
+            </select>
+        </div>
+
+        <div *ngIf="selection == 1" class="create-popup-content">
+            <div>
+                <span class="create-popup-chord-span-top">Key:</span>
+                <select id="create-popup-chord-combo-key">
+                    <option *ngFor="let name of NOTE_NAMES" [value]="name">
+                        {{name}}
+                    </option>
+                </select>
+                <span class="create-popup-chord-span-top">Octave:</span>
+                <select id="create-popup-chord-combo-octave">
+                    <option *ngFor="let i of OCTAVES" [value]="i" [selected]="i == 4">
+                        {{i}}
+                    </option>
+                </select>
+            </div>
+            <div class="create-popup-chord-column">
+                <span class="create-popup-chord-span">Type:</span>
+                <select id="create-popup-chord-combo-type" (change)="CreatePopupChordTypeOnChange($event)">
+                    <option *ngFor="let type of CHORD_TYPES; let i = index" [value]="i">
+                        {{type}}
+                    </option>
+                </select>
+            </div>
+            <div class="create-popup-chord-column-right">
+                <span class="create-popup-chord-span">Chord:</span>
+                <select id="create-popup-chord-combo-name">
+                    <option *ngFor="let template of menuSetTemplates" [value]="template.name">
+                        {{template.name}}
+                    </option>
+                </select>
+            </div>
+
+        </div>
+
+        <div *ngIf="selection == 2" class="create-popup-content">
+            <div>
+                <span class="create-popup-chord-span-top">Key:</span>
+                <select id="create-popup-chord-combo-key">
+                    <option *ngFor="let name of NOTE_NAMES" [value]="name">
+                        {{name}}
+                    </option>
+                </select>
+                <span class="create-popup-chord-span-top">Octave:</span>
+                <select id="create-popup-chord-combo-octave">
+                    <option *ngFor="let i of OCTAVES" [value]="i" [selected]="i == 4">
+                        {{i}}
+                    </option>
+                </select>
+            </div>
+            <div class="create-popup-chord-column">
+                <span class="create-popup-chord-span">Type:</span>
+                <select id="create-popup-chord-combo-type" (change)="CreatePopupChordTypeOnChange($event)">
+                    <option *ngFor="let type of CHORD_TYPES; let i = index" [value]="i">
+                        {{type}}
+                    </option>
+                </select>
+            </div>
+            <div class="create-popup-chord-column-right">
+                <span class="create-popup-chord-span">Chord:</span>
+                <select id="create-popup-chord-combo-name">
+                    <option *ngFor="let template of menuSetTemplates" [value]="template.name">
+                        {{template.name}}
+                    </option>
+                </select>
+            </div>
+
+        </div>
+
+        <div *ngIf="selection == 3" class="create-popup-content">
+            <span id="create-popup-customset-span-large">Give a name to the custom set:</span>
+            <span id="create-popup-customset-span-small">(Max. 8 characters)</span>
+            <input autofocus id="create-popup-customset-input" type="text" (input)="CreatePopupCustomSetNameOnInput($event)">
+        </div>
+
+        <div id="create-popup-footer">
+            <div class="create-popup-button" (click)="CreatePopupCreateButtonOnClick()">Create</div>
+        </div>
+    </div>
+</div>
+
+<div id="app-context" *ngIf="itemContext">
+    <div id="context-header">
+        <div class="context-header-button-left"> < </div>
+        <div class="context-header-button-left"> > </div>
+        <div>
+            <span *ngIf="itemContext"></span>
+            <span></span>
+        </div>
+        <div class="context-header-button-right"> x </div>
+
+    </div>
+</div>
